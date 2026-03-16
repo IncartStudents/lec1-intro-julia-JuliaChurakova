@@ -9,20 +9,21 @@
 =#
 
 # Что происходит с глобальной константой PI, о чем предупреждает интерпретатор?
-const PI = 3.14159
-PI = 3.14
+const PI = 3.14159 # const создает константу, значение которой нельзя переназначить 
+PI = 3.14 #попытка присвоить константе новое значение. Интерпретатор предупреждает о недопустимом присваивание константе
 
 # Что происходит с типами глобальных переменных ниже, какого типа `c` и почему?
-a = 1
-b = 2.0
-c = a + b
+a = 1 # int 
+b = 2.0 #float
+c = a + b # float
+println(typeof(c)) #результат float для сохранения точности 
 
 # Что теперь произошло с переменной а? Как происходит биндинг имен в Julia?
-a = "foo"
+a = "foo" # теперь переменная a ссылается на другую ячейку памяти. В julia имена привязываются к значениям в памяти
 
 # Что происходит с глобальной переменной g и почему? Чем ограничен биндинг имен в Julia?
-g::Int = 1
-g = "hi"
+g::Int = 1 # переменная g может содержать только значения типа int
+g = "hi" # ошибка т.к. нельзя строку преобразовать в целое число
 
 function greet()
     g = "hello"
@@ -30,14 +31,20 @@ function greet()
 end
 greet()
 
+#глобально мы не можем менять тип значений g, но в функции находится локальная переменная, котую можно менять 
+
+
 # Чем отличаются присвоение значений новому имени - и мутация значений?
-v = [1,2,3]
-z = v
-v[1] = 3
-v = "hello"
-z
+v = [1,2,3] #имя v указывает на массив 
+z = v #имя z указывает на тот же массив 
+v[1] = 3 # меняем массив. z и v все еще указывают на одит и тот же массив 
+v = "hello" # теперь v ссылается на другой объект
+z # z ссылается все на тот же массив
 
 # Написать тип, параметризованный другим типом
+array::Array{Float16} = [1, 2, 3]
+array
+typeof(array)
 
 #=
 Написать функцию для двух аругментов, не указывая их тип,
@@ -45,10 +52,20 @@ z
 дать пример запуска
 =#
 
+function f(x, y)
+    x + y
+end
+
+function f(x::Int, y::Int)
+    x * y
+end
+
+f(1, 5)
+f(1., 5.)
 #=
-Абстрактный тип - ключевое слово?
-Примитивный тип - ключевое слово?
-Композитный тип - ключевое слово?
+Абстрактный тип - ключевое слово? abstract type
+Примитивный тип - ключевое слово? primitive type
+Композитный тип - ключевое слово? struct или mutable struct
 =#
 
 #=
@@ -58,6 +75,46 @@ z
 (функция выводит произвольный текст в консоль)
 =#
 
+abstract type Pet end
+
+struct Dog <: Pet
+    name::String
+    age::Int
+end
+
+struct Cat <: Pet
+    name::String
+    age::Int
+end
+
+function information(a::Pet)
+    println("Информация о питомце:
+Имя: $(a.name)
+Возраст: $(a.age)")
+    if a isa Dog
+        println("Тип: собака")
+    else
+        println("Тип: кошка")
+    end
+end
+
+function medicine(p::Dog)
+    print("Лекарства: ")
+    if p.age < 2
+        print("витамины для щенков")
+    elseif p.age < 8
+        print("противоглистное")
+    else
+        print("витамины для пожилых")
+    end
+end
+
+pet1 = Dog("Пиксель", 1)
+pet2 = Cat("Люци", 6)
+
+information(pet1)
+information(pet2)
+medicine(pet1)
 
 #===========================================================================================
 2. Функции:
@@ -69,13 +126,51 @@ z
 
 # Пример обычной функции
 
+function pow1(a, b)
+    return a^b
+end
+
+pow1(2, 3)
+
 # Пример лямбда-функции (аннонимной функции)
+
+pow2 = (a, b) -> a^b
+
+pow2(2, 2)
 
 # Пример функции с переменным количеством аргументов
 
+function sum(args...)
+    sum = 0
+    for i in args
+        sum += i 
+    end
+    return sum    
+end
+
+sum(1, 2, 3, 4, 5)
+sum(1)
+
 # Пример функции с именованными аргументами
 
+function pow3(; base, exp)
+    x = base^exp
+    return x
+end
+
+pow3(base = 2, exp = 3)
+pow3(exp = 3, base = 2)
+
 # Функции с переменным кол-вом именованных аргументов
+
+function information(; kwargs...)
+    for (key, value) in kwargs
+        println("  $key: $value")
+    end
+end
+
+information(name="Мария Иванова", age=28, temperature=38.5, allergy="пенициллин")
+
 
 #=
 Передать кортеж в функцию, которая принимает на вход несколько аргументов.
@@ -83,6 +178,19 @@ z
 Использовать splatting - деструктуризацию кортежа в набор аргументов.
 =#
 
+function info(name, age, city)
+    println("Имя: $name,\nВозраст: $age,\nГород: $city")
+end
+
+chel = ("Рита", 40, "Москва")
+info(chel...)
+
+function step(x)
+    return x, x^2, x^3, x^4
+end
+
+result = step(2)
+result[1] = 3 #нельзя изменить, значит это кортеж, а не массив
 
 #===========================================================================================
 3. loop fusion, broadcast, filter, map, reduce, list comprehension
@@ -94,6 +202,17 @@ z
 - с помощью reduce
 =#
 
+arr = [4, 5.3, 7, 9.1]
+result = 1.0
+
+for x in arr 
+    result *= x 
+end
+
+println(result)
+
+result = reduce(*, arr)
+
 #=
 Написать функцию от одного аргумента и запустить ее по всем элементам массива
 с помощью точки (broadcast)
@@ -102,25 +221,56 @@ c помощью list comprehension
 указать, чем это лучше явного цикла?
 =#
 
+function pow(x)
+    return x^2    
+end
+
+println(pow.(arr))
+println(map(pow, arr))
+s = [pow(x) for x in arr]
+println(s)
+
 # Перемножить вектор-строку [1 2 3] на вектор-столбец [10,20,30] и объяснить результат
 
+display([1 2 3] * [10,20,30])
+
+#=A[i;k] * B[k;j] = C[i;j]. 
+Умножение осуществляется по правилу: каждый элемент C[i,j] 
+результирующей матрицы равен сумме произведений соответствующих 
+элементов из i-й строки первой матрицы и j-го столбца второй матрицы
+Если считать вручную 1 * 10 + 2 * 20 + 3 * 30 = 140
+=#
 
 # В одну строку выбрать из массива [1, -2, 2, 3, 4, -5, 0] только четные и положительные числа
 
+arr = [1, -2, 2, 3, 4, -5, 0]
+println([i for i in arr if (i % 2 == 0) && (i > 0)])
 
 # Объяснить следующий код обработки массива names - что за number мы в итоге определили?
 using Random
-Random.seed!(123)
+Random.seed!(123)# фиксируем генератор случайных чисел
 names = [rand('A':'Z') * '_' * rand('0':'9') * rand([".csv", ".bin"]) for _ in 1:100]
+#=
+генерирует 100 случайных имен файлов типа: 
+буква_цифра.расширение
+расширение либо .csv либо .bin
+=#
+
 # ---
 same_names = unique(map(y -> split(y, ".")[1], filter(x -> startswith(x, "A"), names)))
+#оставляем только уникальные имена с A и без расширения
 numbers = parse.(Int, map(x -> split(x, "_")[end], same_names))
+#берем число после "_" и преобразуем в число
 numbers_sorted = sort(numbers)
+#сортируем по возрастанию
 number = findfirst(n -> !(n in numbers_sorted), 0:9)
+#ищем первое число от 0 до 9, которого нет в списке 
 
 # Упростить этот код обработки:
-
-
+Random.seed!(123)
+names = [rand('A':'Z') * '_' * rand('0':'9') * rand([".csv", ".bin"]) for _ in 1:100]
+numbers_sorted = sort([parse(Int, split(name, "_")[2][1]) for name in names if startswith(name, "A")])
+number = findfirst(n -> !(n in numbers_sorted), 0:9)
 #===========================================================================================
 4. Свой тип данных на общих интерфейсах
 =#
@@ -130,6 +280,14 @@ number = findfirst(n -> !(n in numbers_sorted), 0:9)
 вычисляется при взятии индекса (getindex) по формуле (index - 1)^2
 =#
 
+struct EasyArray 
+    index::Int
+end
+
+Base.getindex(arr::EasyArray, i::Int) = (i-1)^2
+arr = EasyArray(10)
+println(arr[4])
+
 #=
 Написать два типа объектов команд, унаследованных от AbstractCommand,
 которые применяются к массиву:
@@ -137,11 +295,48 @@ number = findfirst(n -> !(n in numbers_sorted), 0:9)
 `ChangeAtCmd(i, val)` - меняет элемент на позиции i на значение val
 Каждая команда имеет конструктор и реализацию метода apply!
 =#
+
 abstract type AbstractCommand end
 apply!(cmd::AbstractCommand, target::Vector) = error("Not implemented for type $(typeof(cmd))")
 
+struct SortCmd <: AbstractCommand end
+
+apply!(cmd::SortCmd, target::Vector) = sort!(target) 
+
+struct ChangeAtCmd <: AbstractCommand 
+    i::Int
+    val::Float64
+end
+
+apply!(cmd::ChangeAtCmd, target::Vector) = target[cmd.i] = cmd.val
+
+data = Float64[5, 2, 8, 1, 9]
+cmd1 = SortCmd()
+apply!(cmd1, data)
+println("После сортировки: $data")
+
+cmd2 = ChangeAtCmd(3, 10.2)
+apply!(cmd2, data)
+println("После изменения: $data")
+
 
 # Аналогичные команды, но без наследования и в виде замыканий (лямбда-функций)
+
+sort_cmd = (array::Vector) -> sort!(array)
+
+function change_at_cmd(i::Int, val::Float64)
+    return (array::Vector) -> array[i] = val
+end
+
+data = [5.0, 2.0, 8.0, 1.0, 9.0]
+cmd1 = sort_cmd
+cmd2 = change_at_cmd(3, 100.0)
+
+cmd1(data) 
+println("После сортировки: $data")
+
+cmd2(data) 
+println("После изменения: $data")
 
 
 #===========================================================================================
@@ -149,6 +344,14 @@ apply!(cmd::AbstractCommand, target::Vector) = error("Not implemented for type $
 =#
 
 # Написать тест для функции
+
+using Test
+
+function f(a, b)
+    return a*b
+end
+
+@test f(2, 7) == 14
 
 
 #===========================================================================================
@@ -158,8 +361,15 @@ apply!(cmd::AbstractCommand, target::Vector) = error("Not implemented for type $
 #=
 Отладить функцию по шагам с помощью макроса @enter и точек останова
 =#
+##
+function f(a, b)
+    A = rand(1:5,a, b)
+    C = [A[i,j] for i in 1:a for j in 1:b]
+    return C
+end
 
-
+@enter f(2,3)
+##
 #===========================================================================================
 7. Профилировщик: как оценить производительность функции?
 =#
